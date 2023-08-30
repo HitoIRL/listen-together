@@ -1,4 +1,29 @@
 <script lang="ts">
+	import Fa from "svelte-fa";
+	import { faBackward, faForward, faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
+    
+    import Song from "./Song.svelte";
+
+    let isPaused = false;
+
+    let url = "";
+    function addSong(event: KeyboardEvent) {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        console.log(`Adding song: ${url}`);
+    }
+
+    let songs: { title: string, thumbnail: string, url: string }[] = [
+        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
+        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
+        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
+        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
+        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
+    ];
+
+    /*
 	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
 	import { onMount } from "svelte";
@@ -54,95 +79,136 @@
             data: url,
         };
         ws.send(JSON.stringify(packet));
+        url = "";
     }
+    */
 </script>
 
 <div class="wrapper">
-    <div class="box listeners"></div>
-    <div class="box controls"></div>
-    <div class="box queue">
-        <div class="input-row">
-            <input bind:value={url} class="input song-input" type="text" name="url" placeholder="Song URL">
-            <input on:click={addSong} class="input add-input" type="button" value="+">
-        </div>
-        <ul class="songs">
-            {#each songs as song}
-                <Song title={song.title} thumbnail={song.thumbnail}/>
-            {/each}
-        </ul>
+    <div class="controls">
+        {#if songs.length === 0}
+            <h2>There are no songs in the queue</h2>
+        {:else}
+            <h2 class="current-song">{songs[0].title}</h2>
+            <div class="buttons">
+                <div class="button">
+                    <Fa fw icon={faBackward} size="2x"/>
+                </div>
+                <div on:click={() => isPaused = !isPaused} class="button main-button">
+                    {#if isPaused}
+                        <Fa fw icon={faPlay} size="2x"/>
+                    {:else}
+                        <Fa fw icon={faPause} size="2x"/>
+                    {/if}
+                </div>
+                <div class="button">
+                    <Fa fw icon={faForward} size="2x"/>
+                </div>
+            </div>
+            <progress class="progress" value="32" max="100">32%</progress>
+        {/if}
+    </div>
+    <div class="queue">
+        <input bind:value={url} on:keypress={addSong} class="queue-input" type="text" name="url" placeholder="Song URL">
+        {#each songs as song}
+            <Song title={song.title} thumbnail={song.thumbnail}/>
+        {/each}
     </div>
 </div>
 
 <style>
     .wrapper {
         display: flex;
-        width: 100%;
-        height: 100%;
+        gap: 15px;
+        height: 400px;
 
         padding: 50px;
-        box-sizing: border-box;
-        gap: 15px;
-    }
 
-    .box {
-        box-sizing: border-box;
-    }
-
-    .listeners {
-        width: 20%;
+        color: white;
+        background-color: #121212;
+        text-align: center;
     }
 
     .controls {
-        width: 50%;
-    }
-
-    .queue {
-        width: 30%;
-    }
-
-    .input-row {
         display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 30px;
+        background-color: #000;
+        padding: 30px;
+        width: 600px;
     }
 
-    .input {
-        box-sizing: border-box;
-        outline: none;
-        border: none;
+    .current-song {
+        max-width: 400px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0 0 20px 0;
     }
 
-    .song-input {
-        width: 100%;
-        padding: 10px;
-        font-size: 1.5rem;
-        
-        border-left: 2px solid black;
-        border-bottom: 2px solid black;
-        border-top: 2px solid black;
+    .buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
     }
 
-    .song-input:focus {
-        border: 2px solid var(--accent-color);
-    }
-
-    .add-input {
+    .button {
         cursor: pointer;
-        width: 60px;
-
-        font-size: 2rem;
-        font-weight: bold;
-        background-color: var(--accent-color);
-
-        border-bottom: 2px solid black;
-        border-top: 2px solid black;
-        border-right: 2px solid black;
     }
 
-    .add-input:hover {
+    .main-button {
+        background-color: var(--accent-color);
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .main-button:hover {
         background-color: var(--light-accent-color);
     }
 
-    .songs {
-        list-style-type: none;
-        padding: 0;
+    .progress {
+        width: 100%;
+    }
+
+    .progress[value] {
+        -webkit-appearance: none;
+        appearance: none;
+        -moz-appearance: none;
+
+        height: 20px;
+        border: none;
+
+        background-color: rgb(35, 35, 35);
+    }
+
+    .progress[value]::-moz-progress-bar,
+    .progress[value]::-webkit-progress-bar {
+        background-color: white;
+        box-shadow: 0 0 3px black inset;
+    }
+
+    .queue {
+        width: 400px;
+        overflow-y: scroll;
+        background-color: #000;
+        padding: 10px;
+    }
+
+    .queue-input {
+        box-sizing: border-box;
+        width: 100%;
+        background-color: transparent;
+        border: 2px solid rgb(49, 49, 49);
+        outline: none;
+        color: white;
+        padding: 15px;
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+
+    .queue-input:focus {
+        border: 2px solid var(--accent-color);
     }
 </style>

@@ -8,16 +8,18 @@
 
 <li class="song">
     <img class="thumbnail" src={thumbnail} alt="Thumbnail">
-    <h3>{title}</h3>
+    <p class="title">{title}</p>
+    <div class="buttons">
+        <Fa icon={faTrashCan}/>
+    </div>
 </li>
 
 <style>
     .song {
         display: flex;
+        text-align: left;
         align-items: center;
-        padding: 10px;
         gap: 15px;
-        border: 2px solid black;
     }
 
     .song:not(:last-child) {
@@ -26,5 +28,17 @@
 
     .thumbnail {
         width: 120px;
+    }
+
+    .title {
+        flex-grow: 1;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .buttons {
+        margin: 0 20px 0 10px;
+        cursor: pointer;
     }
 </style>
