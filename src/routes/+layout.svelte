@@ -16,9 +16,11 @@
 
     .main {
         font-family: "Bricolage Grotesque", sans-serif;
+        color: white;
         background-color: #000;
 
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
 

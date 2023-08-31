@@ -2,15 +2,19 @@
 	import { goto } from "$app/navigation";
 
     async function createSession() {
-        const response = await fetch("http://127.0.0.1:3000/session", {
+        await fetch("http://127.0.0.1:3000/session", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
+        })
+        .then(async (response) => {
+            const json = await response.json();
+            goto(`/session/${json.id}`);
+        })
+        .catch(() => {
+            alert("Failed to create session, maybe the API is down?");
         });
-        const json = await response.json();
-
-        goto(`/session/${json.id}`);
     }
 </script>
 

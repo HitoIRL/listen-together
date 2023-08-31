@@ -1,33 +1,10 @@
 <script lang="ts">
-	import Fa from "svelte-fa";
-	import { faBackward, faForward, faPause, faPlay } from "@fortawesome/free-solid-svg-icons";
-    
-    import Song from "./Song.svelte";
-
-    let isPaused = false;
-
-    let url = "";
-    function addSong(event: KeyboardEvent) {
-        if (event.key !== "Enter") {
-            return;
-        }
-
-        console.log(`Adding song: ${url}`);
-    }
-
-    let songs: { title: string, thumbnail: string, url: string }[] = [
-        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
-        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
-        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
-        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
-        { title: "Koza x Oorbit - Delfin", thumbnail: "https://i.ytimg.com/vi/5qap5aO4i9A/maxresdefault.jpg", url: "https://www.youtube.com/watch?v=xxd8-cx90s0" },
-    ];
-
-    /*
-	import { goto } from "$app/navigation";
-	import { page } from "$app/stores";
 	import { onMount } from "svelte";
-
+	import { page } from "$app/stores";
+	import { goto } from "$app/navigation";
+	import Fa from "svelte-fa";
+	import { faBackward, faForward, faPause, faPlay, faTrash, faTrashCan, faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
+    
     import Song from "./Song.svelte";
 
     interface Packet {
@@ -54,7 +31,6 @@
         ws = new WebSocket(`ws://127.0.0.1:3000/session/${id}`);
 
         ws.onerror = (event) => {
-            // we can assume that the session doesn't exist
             goto("/");
         }
 
@@ -73,7 +49,12 @@
     });
 
     let url = "";
-    async function addSong() {
+    function addSong(event: KeyboardEvent) {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        console.log(`Adding song: ${url}`);
         const packet: Packet = {
             kind: "AddSong",
             data: url,
@@ -81,31 +62,51 @@
         ws.send(JSON.stringify(packet));
         url = "";
     }
-    */
+
+    let isPaused = true;
+    let duration = 1.0;
+    let currentTime = 0.0;
+    let volume = 0.2;
 </script>
 
 <div class="wrapper">
+    <div class="listeners">
+        <h2 class="listeners-heading">Listeners</h2>
+        <ul class="listeners-list">
+            <li>HitoIRL</li>
+        </ul>
+    </div>
     <div class="controls">
         {#if songs.length === 0}
             <h2>There are no songs in the queue</h2>
         {:else}
+            <audio class="audio-controller" bind:volume={volume} bind:duration={duration} bind:currentTime={currentTime} bind:paused={isPaused} controls>
+                <source src={songs[0].audio} type="audio/webm">
+                    Your browser does not support the audio element.
+            </audio>
             <h2 class="current-song">{songs[0].title}</h2>
             <div class="buttons">
                 <div class="button">
                     <Fa fw icon={faBackward} size="2x"/>
                 </div>
-                <div on:click={() => isPaused = !isPaused} class="button main-button">
-                    {#if isPaused}
+                {#if isPaused}
+                    <button class="button main-button" on:click={() => isPaused = false}>
                         <Fa fw icon={faPlay} size="2x"/>
-                    {:else}
+                    </button>
+                {:else}
+                    <button class="button main-button" on:click={() => isPaused = true}>
                         <Fa fw icon={faPause} size="2x"/>
-                    {/if}
-                </div>
+                    </button>
+                {/if}
                 <div class="button">
                     <Fa fw icon={faForward} size="2x"/>
                 </div>
             </div>
-            <progress class="progress" value="32" max="100">32%</progress>
+            <input bind:value={currentTime} class="input-range progress" type="range" name="progress" max={duration}>
+            <div class="volume-row">
+                <Fa icon={faVolumeHigh} size="1.5x"/>
+                <input bind:value={volume} class="input-range" type="range" name="volume" max="1.0" step="0.01">
+            </div>
         {/if}
     </div>
     <div class="queue">
@@ -124,9 +125,33 @@
 
         padding: 50px;
 
-        color: white;
         background-color: #121212;
+    }
+
+    .listeners {
+        background-color: #000;
+        padding: 30px;
+        width: 200px;
+        overflow-y: scroll;
+    }
+
+    .listeners-heading {
+        margin: 0;
         text-align: center;
+    }
+
+    .listeners-list {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .listeners-list li {
+        background-color: rgb(27, 27, 27);
+        padding: 10px;
+    }
+
+    .listeners-list li:not(:last-child) {
+        margin-bottom: 5px;
     }
 
     .controls {
@@ -138,6 +163,10 @@
         background-color: #000;
         padding: 30px;
         width: 600px;
+    }
+
+    .audio-controller {
+        display: none;
     }
 
     .current-song {
@@ -156,6 +185,8 @@
 
     .button {
         cursor: pointer;
+        border: none;
+        color: white;
     }
 
     .main-button {
@@ -168,25 +199,42 @@
         background-color: var(--light-accent-color);
     }
 
+    .input-range {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .input-range::-webkit-slider-runnable-track,
+    .input-range::-moz-range-track {
+        background: rgb(35, 35, 35);
+        height: 20px;
+    }
+
+    .input-range::-webkit-slider-thumb,
+    .input-range::-moz-range-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+
+        border: none;
+        background-color: transparent;
+    }
+
+    .input-range::-moz-range-progress {
+        background-color: white;
+        box-shadow: 0 0 3px black inset;
+        height: 20px;
+    }
+
     .progress {
         width: 100%;
     }
 
-    .progress[value] {
-        -webkit-appearance: none;
-        appearance: none;
-        -moz-appearance: none;
-
-        height: 20px;
-        border: none;
-
-        background-color: rgb(35, 35, 35);
-    }
-
-    .progress[value]::-moz-progress-bar,
-    .progress[value]::-webkit-progress-bar {
-        background-color: white;
-        box-shadow: 0 0 3px black inset;
+    .volume-row {
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
 
     .queue {
