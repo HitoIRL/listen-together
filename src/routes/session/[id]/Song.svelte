@@ -4,12 +4,15 @@
 
     export let thumbnail: string;
     export let title: string;
+    export let current: boolean;
+    
+    console.log(current);
 </script>
 
-<li class="song">
+<li class="song" style:--color={current ? "var(--accent-color)" : "none"}>
     <img class="thumbnail" src={thumbnail} alt="Thumbnail">
     <p class="title">{title}</p>
-    <div class="buttons">
+    <div class="buttons" on:click>
         <Fa icon={faTrashCan}/>
     </div>
 </li>
@@ -20,6 +23,8 @@
         text-align: left;
         align-items: center;
         gap: 15px;
+        height: 90px;
+        background: var(--color);
     }
 
     .song:not(:last-child) {
@@ -28,6 +33,8 @@
 
     .thumbnail {
         width: 120px;
+        height: 100%;
+        object-fit: cover;
     }
 
     .title {

@@ -3,23 +3,35 @@
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import Fa from "svelte-fa";
-	import { faBackward, faForward, faPause, faPlay, faTrash, faTrashCan, faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
+	import { faBackward, faForward, faPause, faPlay, faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
     
     import Song from "./Song.svelte";
 
     interface Packet {
-        kind: "AddSong" | "SetSongs",
+        kind: "Error" | "AddSong" | "SetSongs" | "RemoveSong" | "SetCurrentSong" | "ForwardSkip" | "BackwardSkip" | "SessionData",
         data: string,
     }
 
     let songs: any[] = [];
-    function processPacket(packet: Packet) {
-        console.log(packet);
+    let currentSong = 0;
+    let audioElement: HTMLAudioElement;
 
+    function processPacket(packet: Packet) {
         switch (packet.kind) {
-            case "SetSongs":
-                let data = JSON.parse(packet.data);
+            case "Error":
+                alert(packet.data);
+                break;
+            case "SetSongs": {
+                const data = JSON.parse(packet.data);
+                console.log(data);
                 songs = data;
+                break;
+            }
+            case "SetCurrentSong":
+                currentSong = parseInt(packet.data);
+                if (audioElement) {
+                    audioElement.load();
+                }
                 break;
         }
     }
@@ -45,6 +57,7 @@
 
         ws.onclose = () => {
             console.log("Disconnected from WebSocket");
+            // goto("/");
         }
     });
 
@@ -54,7 +67,6 @@
             return;
         }
 
-        console.log(`Adding song: ${url}`);
         const packet: Packet = {
             kind: "AddSong",
             data: url,
@@ -63,10 +75,28 @@
         url = "";
     }
 
-    let isPaused = true;
+    function removeSong(id: string) {
+        const packet: Packet = {
+            kind: "RemoveSong",
+            data: id,
+        };
+        ws.send(JSON.stringify(packet));
+    }
+
+    function skipSong(backward: boolean) {
+        const packet: Packet = {
+            kind: backward ? "BackwardSkip" : "ForwardSkip",
+            data: "",
+        };
+        ws.send(JSON.stringify(packet));
+    }
+
     let duration = 1.0;
     let currentTime = 0.0;
     let volume = 0.2;
+    let isPaused = true;
+
+    // TODO: fix autoplay issues
 </script>
 
 <div class="wrapper">
@@ -80,15 +110,15 @@
         {#if songs.length === 0}
             <h2>There are no songs in the queue</h2>
         {:else}
-            <audio class="audio-controller" bind:volume={volume} bind:duration={duration} bind:currentTime={currentTime} bind:paused={isPaused} controls>
-                <source src={songs[0].audio} type="audio/webm">
+            <audio bind:this={audioElement} class="audio-controller" bind:volume={volume} bind:duration={duration} bind:currentTime={currentTime} bind:paused={isPaused} controls>
+                <source src={songs[currentSong].audio} type="audio/webm">
                     Your browser does not support the audio element.
             </audio>
-            <h2 class="current-song">{songs[0].title}</h2>
+            <h2 class="current-song">{songs[currentSong].title}</h2>
             <div class="buttons">
-                <div class="button">
+                <button on:click={() => skipSong(true)} class="button">
                     <Fa fw icon={faBackward} size="2x"/>
-                </div>
+                </button>
                 {#if isPaused}
                     <button class="button main-button" on:click={() => isPaused = false}>
                         <Fa fw icon={faPlay} size="2x"/>
@@ -98,9 +128,9 @@
                         <Fa fw icon={faPause} size="2x"/>
                     </button>
                 {/if}
-                <div class="button">
+                <button on:click={() => skipSong(false)} class="button">
                     <Fa fw icon={faForward} size="2x"/>
-                </div>
+                </button>
             </div>
             <input bind:value={currentTime} class="input-range progress" type="range" name="progress" max={duration}>
             <div class="volume-row">
@@ -112,7 +142,7 @@
     <div class="queue">
         <input bind:value={url} on:keypress={addSong} class="queue-input" type="text" name="url" placeholder="Song URL">
         {#each songs as song}
-            <Song title={song.title} thumbnail={song.thumbnail}/>
+            <Song title={song.title} thumbnail={song.thumbnail} current={songs[currentSong] == song} on:click={() => removeSong(song.id)}/>
         {/each}
     </div>
 </div>
@@ -174,6 +204,8 @@
         overflow: hidden;
         text-overflow: ellipsis;
         margin: 0 0 20px 0;
+        text-align: center;
+        height: 60px;
     }
 
     .buttons {
@@ -187,6 +219,7 @@
         cursor: pointer;
         border: none;
         color: white;
+        background: none;
     }
 
     .main-button {
